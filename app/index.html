@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pro RSS Reader</title>
+  <link rel="icon" href="../icon.svg" type="image/svg+xml">
+  <script src="js/theme-boot.js"></script>
+  <link rel="stylesheet" href="css/theme.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/reader.css">
+</head>
+<body class="booting">
+  <div class="app-body">
+    <aside id="sidebar" class="sidebar" aria-label="Feeds">
+      <div class="sidebar-top">
+        <div class="sidebar-brand">
+          <img src="../icon.svg" alt="" width="36" height="36">
+          <span class="brand-name">Pro RSS Reader</span>
+        </div>
+        <button id="all-btn" class="nav-item" type="button">
+          <span data-icon="layers"></span>
+          <span class="nav-label">All items</span>
+        </button>
+        <div class="sidebar-actions">
+          <button id="add-feed-btn" class="nav-item nav-add" type="button">
+            <span data-icon="plus"></span>
+            <span class="nav-label">Add feed</span>
+          </button>
+          <button id="add-folder-btn" class="nav-item nav-add" type="button">
+            <span data-icon="folder-plus"></span>
+            <span class="nav-label">Add folder</span>
+          </button>
+        </div>
+      </div>
+      <section class="subs" aria-labelledby="subs-heading">
+        <h2 id="subs-heading" class="subs-heading"><span>Your Subscriptions</span><span id="subs-count" class="subs-count"></span></h2>
+        <div id="subscriptions"></div>
+      </section>
+      <div class="sidebar-foot">
+        <button id="settings-btn" class="nav-item" type="button">
+          <span data-icon="settings"></span>
+          <span class="nav-label">Settings</span>
+        </button>
+        <button id="info-btn" class="icon-btn" type="button" aria-label="About and help" title="About and help">
+          <span data-icon="info"></span>
+        </button>
+      </div>
+    </aside>
+
+    <div id="scrim" class="scrim"></div>
+
+    <main class="content">
+      <div id="content-scroll" class="content-scroll">
+        <div class="content-bar">
+          <h1 id="content-title" class="content-title">
+            <span id="content-icon" class="content-icon"></span>
+            <span id="content-name" class="content-name"></span>
+          </h1>
+        </div>
+        <div id="articles"></div>
+      </div>
+      <button id="menu-btn" class="icon-btn fab fab-left menu-btn" type="button" aria-label="Open menu" aria-controls="sidebar" aria-expanded="false">
+        <span data-icon="menu"></span>
+      </button>
+      <button id="refresh-btn" class="icon-btn fab fab-right" type="button" aria-label="Refresh" title="Refresh">
+        <span data-icon="refresh"></span>
+      </button>
+      <button id="to-top" class="icon-btn fab to-top" type="button" aria-label="Scroll to top" title="Scroll to top">
+        <span data-icon="arrow-up"></span>
+      </button>
+    </main>
+  </div>
+
+  <script src="../lib/readability.js"></script>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

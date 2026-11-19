@@ -1,0 +1,30 @@
+{
+  "manifest_version": 3,
+  "name": "Pro RSS Reader",
+  "version": "1.0.0",
+  "description": "Private RSS, Atom and JSON Feed reader with feed discovery and a clean reading view.",
+  "icons": {
+    "48": "icon.svg",
+    "96": "icon.svg"
+  },
+  "action": {
+    "default_title": "Pro RSS Reader",
+    "default_icon": "icon.svg"
+  },
+  "background": {
+    "scripts": ["background/background.js"],
+    "type": "module"
+  },
+  "permissions": ["storage", "unlimitedStorage", "tabs", "scripting", "activeTab"],
+  "host_permissions": ["<all_urls>"],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "pro-rss-reader@purebliss888",
+      "strict_min_version": "128.0",
+      "data_collection_permissions": { "required": ["none"] }
+    }
+  }
+}
