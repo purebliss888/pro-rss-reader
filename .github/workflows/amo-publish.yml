@@ -1,0 +1,41 @@
+name: Publish to AMO
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Compare manifest version and tag
+        env:
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          TAG_VERSION="${TAG_NAME#v}"
+          MANIFEST_VERSION="$(node -p "require('./manifest.json').version")"
+
+          if [ "$TAG_VERSION" != "$MANIFEST_VERSION" ]; then
+            echo "Version mismatch: tag is '$TAG_VERSION', manifest.json is '$MANIFEST_VERSION'"
+            exit 1
+          fi
+
+          echo "Version matches: $MANIFEST_VERSION"
+
+      - name: Sign and upload to AMO
+        run: |
+          npx web-ext sign \
+            --channel=listed \
+            --source-dir=. \
+            --ignore-files='.github/**' '.git/**' '.gitignore' 'Readme.md' \
+            --api-key=${{ secrets.AMO_JWT_ISSUER }} \
+            --api-secret=${{ secrets.AMO_JWT_SECRET }}

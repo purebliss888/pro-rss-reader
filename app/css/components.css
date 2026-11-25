@@ -59,7 +59,7 @@ input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline
 .fab-left{top:var(--fab-gap);left:var(--fab-gap)}
 .fab-right{top:var(--fab-gap);right:var(--fab-gap)}
 .to-top{
-  bottom:20px;left:50%;
+  bottom:var(--fab-bottom);left:50%;
   transform:translate(-50%,12px);opacity:0;visibility:hidden;
   transition:opacity .18s,transform .18s,visibility 0s linear .18s;
 }
