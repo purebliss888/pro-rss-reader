@@ -7,6 +7,9 @@ const DAY_MS = 86_400_000;
 
 let dbPromise = null;
 
+const memArticles = new Map();
+const memReader = new Map();
+
 function openDb() {
   if (!dbPromise) {
     dbPromise = new Promise((resolve, reject) => {
@@ -27,8 +30,8 @@ function openDb() {
       req.onsuccess = () => resolve(req.result);
       req.onerror = () => reject(req.error);
     }).catch((err) => {
-      dbPromise = null;
-      throw err;
+      console.warn("IndexedDB is unavailable; articles are kept in memory only.", err);
+      return null;
     });
   }
   return dbPromise;
@@ -67,6 +70,10 @@ function walk(cursorRequest, fn) {
 export async function putArticles(articles) {
   if (!articles.length) return;
   const db = await openDb();
+  if (!db) {
+    for (const a of articles) memArticles.set(a.id, a);
+    return;
+  }
   const tx = db.transaction("articles", "readwrite");
   const store = tx.objectStore("articles");
   for (const a of articles) store.put(a);
@@ -75,6 +82,7 @@ export async function putArticles(articles) {
 
 export async function getArticlesByFeed(feedId) {
   const db = await openDb();
+  if (!db) return [...memArticles.values()].filter((a) => a.feedId === feedId);
   return request(
     db.transaction("articles").objectStore("articles").index("feedId").getAll(IDBKeyRange.only(feedId))
   );
@@ -87,9 +95,8 @@ export async function getArticles({ feedIds = null, limit = 200, offset = 0 } = 
   const isDuplicate = duplicateFilter();
   const out = [];
   let skipped = 0;
-  const cursorReq = db.transaction("articles").objectStore("articles").index("date").openCursor(null, "prev");
-  await walk(cursorReq, (cursor) => {
-    const a = cursor.value;
+  // Returns false once `limit` items are collected
+  const visit = (a) => {
     if (wanted && !wanted.has(a.feedId)) return true;
     if (isDuplicate(a)) return true;
     if (skipped < offset) {
@@ -98,12 +105,24 @@ export async function getArticles({ feedIds = null, limit = 200, offset = 0 } = 
     }
     out.push(a);
     return out.length < limit;
-  });
+  };
+  if (!db) {
+    for (const a of [...memArticles.values()].sort((x, y) => y.date - x.date)) {
+      if (visit(a) === false) break;
+    }
+    return out;
+  }
+  const cursorReq = db.transaction("articles").objectStore("articles").index("date").openCursor(null, "prev");
+  await walk(cursorReq, (cursor) => visit(cursor.value));
   return out;
 }
 
 export async function deleteArticlesByFeed(feedId) {
   const db = await openDb();
+  if (!db) {
+    for (const [id, a] of memArticles) if (a.feedId === feedId) memArticles.delete(id);
+    return;
+  }
   const tx = db.transaction("articles", "readwrite");
   const store = tx.objectStore("articles");
   const keys = await request(store.index("feedId").getAllKeys(IDBKeyRange.only(feedId)));
@@ -114,6 +133,10 @@ export async function deleteArticlesByFeed(feedId) {
 export async function countArticlesByFeed() {
   const db = await openDb();
   const counts = new Map();
+  if (!db) {
+    for (const a of memArticles.values()) counts.set(a.feedId, (counts.get(a.feedId) || 0) + 1);
+    return counts;
+  }
   const cursorReq = db.transaction("articles").objectStore("articles").index("feedId").openKeyCursor();
   await walk(cursorReq, (cursor) => {
     counts.set(cursor.key, (counts.get(cursor.key) || 0) + 1);
@@ -126,6 +149,16 @@ export async function pruneArticles(feedIds, { maxPerFeed, days }) {
   const db = await openDb();
   const cutoff = Date.now() - days * DAY_MS;
   const known = new Set(feedIds);
+  if (!db) {
+    for (const feedId of feedIds) {
+      const list = [...memArticles.values()].filter((a) => a.feedId === feedId).sort((x, y) => y.date - x.date);
+      list.forEach((a, i) => {
+        if (i >= maxPerFeed || a.fetched < cutoff) memArticles.delete(a.id);
+      });
+    }
+    for (const [id, a] of memArticles) if (!known.has(a.feedId)) memArticles.delete(id);
+    return;
+  }
   const tx = db.transaction("articles", "readwrite");
   const store = tx.objectStore("articles");
 
@@ -154,11 +187,16 @@ export async function pruneArticles(feedIds, { maxPerFeed, days }) {
 
 export async function getReaderCache(url) {
   const db = await openDb();
+  if (!db) return memReader.get(url) || null;
   return (await request(db.transaction("reader").objectStore("reader").get(url))) || null;
 }
 
 export async function putReaderCache(entry) {
   const db = await openDb();
+  if (!db) {
+    memReader.set(entry.url, { ...entry, fetched: entry.fetched || Date.now() });
+    return;
+  }
   const tx = db.transaction("reader", "readwrite");
   tx.objectStore("reader").put({ ...entry, fetched: entry.fetched || Date.now() });
   await txDone(tx);
@@ -166,6 +204,11 @@ export async function putReaderCache(entry) {
 
 export async function pruneReaderCache(days) {
   const db = await openDb();
+  if (!db) {
+    const cutoff = Date.now() - days * DAY_MS;
+    for (const [url, e] of memReader) if (e.fetched <= cutoff) memReader.delete(url);
+    return;
+  }
   const tx = db.transaction("reader", "readwrite");
   const range = IDBKeyRange.upperBound(Date.now() - days * DAY_MS);
   await walk(tx.objectStore("reader").index("fetched").openCursor(range), (cursor) => {

@@ -5,9 +5,27 @@ const MAX_TOASTS = 4;
 let container = null;
 
 function ensureContainer() {
-  if (!container || !container.isConnected) {
+  if (!container) {
     container = h("div", { class: "toasts", popover: "manual", role: "status", "aria-live": "polite" });
-    document.body.appendChild(container);
+  }
+  const dialogs = document.querySelectorAll("dialog[open]");
+  const dialog = dialogs.length ? dialogs[dialogs.length - 1] : null;
+  const host = dialog || document.body;
+  if (container.parentNode !== host) {
+    host.appendChild(container);
+    if (dialog) {
+      // A closing dialog removes itself; take the toasts back to the page first.
+      dialog.addEventListener(
+        "close",
+        () => {
+          if (container.parentNode === dialog || !container.isConnected) {
+            document.body.appendChild(container);
+            if (container.children.length) raise(container);
+          }
+        },
+        { once: true }
+      );
+    }
   }
   return container;
 }

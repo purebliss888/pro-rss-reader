@@ -64,17 +64,20 @@ function transferSection(dlg) {
       const parsed = parseOpml(await file.text());
       if (!parsed.feeds.length) throw new Error("No feeds were found in this file.");
       const result = await importSubscriptions(parsed, { onChange: reloadData });
-      await reloadData();
+      if (result.added === 0 && result.folders === 0) {
+        const n = result.skipped;
+        status.textContent = `All ${n} ${n === 1 ? "feed is" : "feeds are"} already added.`;
+        logger.info("import", `Nothing to import from ${file.name}: all feeds already added`);
+        return;
+      }
       const parts = [`Added ${result.added} ${result.added === 1 ? "feed" : "feeds"}`];
       if (result.skipped) parts.push(`${result.skipped} already subscribed`);
       if (result.folders) parts.push(`${result.folders} new ${result.folders === 1 ? "folder" : "folders"}`);
-      if (result.added || result.folders) {
-        const summary = parts.join(", ") + ".";
-        logger.info("import", `Imported ${result.added} feeds from ${file.name}`, result);
-        showToast(summary, { type: "info" });
-        closeModal(dlg);
-      } else { status.textContent = summary; }
+      logger.info("import", `Imported ${result.added} feeds from ${file.name}`, result);
+      showToast(parts.join(", ") + ".", { type: "info" });
+      closeModal(dlg);
 
+      reloadData().catch((err) => logger.warn("import", "Could not refresh the view", err));
       if (result.feeds.length) {
         refreshFeeds(result.feeds)
           .then(reloadData)

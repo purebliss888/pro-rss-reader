@@ -4,6 +4,12 @@ A private RSS, Atom, RDF and JSON Feed reader for Firefox (desktop and Android),
 with feed discovery and Google News feeds for sites that publish none, and a
 clean full-article reader.
 
+<p align="center">
+ <a href="https://addons.mozilla.org/en-US/firefox/addon/pro-rss-reader">
+ <img src="https://img.shields.io/badge/Install_on-Firefox-FF7139?logo=firefox-browser&logoColor=white" alt="Get Pro RSS Reader">
+ </a>
+</p>
+
 ## Features
 - Reads RSS, Atom, RDF and JSON Feed. Given a website address it finds the site's
   feeds (advertised links, common paths, WordPress REST API) and verifies them.
